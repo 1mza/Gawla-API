@@ -3,15 +3,20 @@
 namespace Abbasudo\Purity\Traits;
 
 use Abbasudo\Purity\Exceptions\FieldNotSupported;
+use Abbasudo\Purity\Helpers;
+use Abbasudo\Purity\Sorts\Sort;
 use Closure;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
  * List of available fields, if not declared will accept every thing.
  *
  * @property array $sortFields
+ *
+ * @mixin Model
  */
 trait Sortable
 {
@@ -44,13 +49,9 @@ trait Sortable
                 continue;
             }
 
+            $column = Str::contains($column, '.') ? Str::before($column, '.') : $column;
             $column = $this->getSortField($column);
-
-            if (Str::of($field)->endsWith(':desc')) {
-                $query->orderByDesc($column);
-            } else {
-                $query->orderBy($column);
-            }
+            $this->applySort($column, $field, $query);
         }
 
         return $query;
@@ -64,6 +65,8 @@ trait Sortable
         $available = $this->availableSort();
 
         return $this->safe(function () use ($field, $available) {
+            $field = Str::contains($field, '.') ? Str::before($field, '.') : $field;
+
             if (!in_array($field, $available)) {
                 throw FieldNotSupported::create($field, self::class, $available);
             }
@@ -71,11 +74,23 @@ trait Sortable
     }
 
     /**
+     * @param string  $column
+     * @param string  $field
+     * @param Builder $query
+     *
+     * @return Builder
+     */
+    public function applySort(string $column, string $field, Builder $query): Builder
+    {
+        return (new Sort($column, $field, $query, $this))();
+    }
+
+    /**
      * @return array
      */
     private function availableSort(): array
     {
-        return $this->sortFields ?? $this->getTableColumns();
+        return $this->sortFields ?? array_merge($this->getTableColumns(), Helpers::getRelations($this));
     }
 
     /**

@@ -241,7 +241,7 @@ class PendingProcess
      * @throws \Illuminate\Process\Exceptions\ProcessTimedOutException
      * @throws \RuntimeException
      */
-    public function run(array|string $command = null, callable $output = null)
+    public function run(array|string|null $command = null, ?callable $output = null)
     {
         $this->command = $command ?: $this->command;
 
@@ -271,7 +271,7 @@ class PendingProcess
      *
      * @throws \RuntimeException
      */
-    public function start(array|string $command = null, callable $output = null)
+    public function start(array|string|null $command = null, ?callable $output = null)
     {
         $this->command = $command ?: $this->command;
 
@@ -364,6 +364,10 @@ class PendingProcess
     {
         $result = $fake($this);
 
+        if (is_int($result)) {
+            return (new FakeProcessResult(exitCode: $result))->withCommand($command);
+        }
+
         if (is_string($result) || is_array($result)) {
             return (new FakeProcessResult(output: $result))->withCommand($command);
         }
@@ -373,6 +377,7 @@ class PendingProcess
             $result instanceof FakeProcessResult => $result->withCommand($command),
             $result instanceof FakeProcessDescription => $result->toProcessResult($command),
             $result instanceof FakeProcessSequence => $this->resolveSynchronousFake($command, fn () => $result()),
+            $result instanceof \Throwable => throw $result,
             default => throw new LogicException('Unsupported synchronous process fake result provided.'),
         };
     }

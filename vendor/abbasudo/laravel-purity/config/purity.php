@@ -13,6 +13,7 @@ use Abbasudo\Purity\Filters\Strategies\GreaterThanFilter;
 use Abbasudo\Purity\Filters\Strategies\InFilter;
 use Abbasudo\Purity\Filters\Strategies\LessOrEqualFilter;
 use Abbasudo\Purity\Filters\Strategies\LessThanFilter;
+use Abbasudo\Purity\Filters\Strategies\NotBetweenFilter;
 use Abbasudo\Purity\Filters\Strategies\NotContainsFilter;
 use Abbasudo\Purity\Filters\Strategies\NotContainsSensitiveFilter;
 use Abbasudo\Purity\Filters\Strategies\NotEqualFilter;
@@ -37,6 +38,7 @@ return [
         LessOrEqualFilter::class,
         LessThanFilter::class,
         NotContainsFilter::class,
+        NotBetweenFilter::class,
         NotEqualFilter::class,
         NotInFilter::class,
         NullFilter::class,
@@ -52,4 +54,7 @@ return [
     'silent' => true,
 
     'custom_filters_location' => app_path('Filters'),
+
+    'null_last' => false,
+
 ];

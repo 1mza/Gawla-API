@@ -3,6 +3,7 @@
 namespace Laravel\Prompts\Concerns;
 
 use InvalidArgumentException;
+use Laravel\Prompts\Clear;
 use Laravel\Prompts\ConfirmPrompt;
 use Laravel\Prompts\MultiSearchPrompt;
 use Laravel\Prompts\MultiSelectPrompt;
@@ -15,7 +16,9 @@ use Laravel\Prompts\SelectPrompt;
 use Laravel\Prompts\Spinner;
 use Laravel\Prompts\SuggestPrompt;
 use Laravel\Prompts\Table;
+use Laravel\Prompts\TextareaPrompt;
 use Laravel\Prompts\TextPrompt;
+use Laravel\Prompts\Themes\Default\ClearRenderer;
 use Laravel\Prompts\Themes\Default\ConfirmPromptRenderer;
 use Laravel\Prompts\Themes\Default\MultiSearchPromptRenderer;
 use Laravel\Prompts\Themes\Default\MultiSelectPromptRenderer;
@@ -28,6 +31,7 @@ use Laravel\Prompts\Themes\Default\SelectPromptRenderer;
 use Laravel\Prompts\Themes\Default\SpinnerRenderer;
 use Laravel\Prompts\Themes\Default\SuggestPromptRenderer;
 use Laravel\Prompts\Themes\Default\TableRenderer;
+use Laravel\Prompts\Themes\Default\TextareaPromptRenderer;
 use Laravel\Prompts\Themes\Default\TextPromptRenderer;
 
 trait Themes
@@ -45,6 +49,7 @@ trait Themes
     protected static array $themes = [
         'default' => [
             TextPrompt::class => TextPromptRenderer::class,
+            TextareaPrompt::class => TextareaPromptRenderer::class,
             PasswordPrompt::class => PasswordPromptRenderer::class,
             SelectPrompt::class => SelectPromptRenderer::class,
             MultiSelectPrompt::class => MultiSelectPromptRenderer::class,
@@ -57,6 +62,7 @@ trait Themes
             Note::class => NoteRenderer::class,
             Table::class => TableRenderer::class,
             Progress::class => ProgressRenderer::class,
+            Clear::class => ClearRenderer::class,
         ],
     ];
 

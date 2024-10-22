@@ -13,3 +13,7 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+test-results
+/docs/.vuepress/.temp
+/docs/.vuepress/.cache
+/docs/.vuepress/dist

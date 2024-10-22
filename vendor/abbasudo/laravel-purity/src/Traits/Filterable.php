@@ -12,11 +12,11 @@ use Illuminate\Support\Str;
 use ReflectionClass;
 
 /**
- * List of available filters, can be set on the model otherwise it will be read from config.
+ * The List of available filters can be set on the model otherwise it will be read from config.
  *
  * @property array $filters
  *
- * List of available fields, if not declared will accept every thing.
+ * List of available fields, if not declared, will accept everything.
  * @property array $filterFields
  *
  * Fields will restrict to defined filters.
@@ -28,6 +28,19 @@ use ReflectionClass;
 trait Filterable
 {
     use getColumns;
+
+    private string $defaultFilterResolverClass = Resolve::class;
+
+    /**
+     * Returns full class name of the filter resolver.
+     * Can be overridden in the model.
+     *
+     * @return string
+     */
+    protected function getFilterResolver(): string
+    {
+        return $this->defaultFilterResolverClass;
+    }
 
     /**
      * Apply filters to the query builder instance.
@@ -68,7 +81,11 @@ trait Filterable
             return (new FilterList())->only($this->getFilters());
         });
 
-        app()->when(Resolve::class)->needs(Model::class)->give(fn () => $this);
+        app()->bind(Resolve::class, function () {
+            $resolver = $this->getFilterResolver();
+
+            return new $resolver(app(FilterList::class), $this);
+        });
     }
 
     /**
@@ -107,11 +124,16 @@ trait Filterable
      */
     public function availableFields(): array
     {
-        if (!isset($this->filterFields)) {
-            return array_merge($this->getTableColumns(), $this->relations());
+        if (!isset($this->filterFields) && !isset($this->renamedFilterFields)) {
+            return $this->getDefaultFields();
         }
 
         return $this->getUserDefinedFilterFields();
+    }
+
+    private function getDefaultFields(): array
+    {
+        return array_merge($this->getTableColumns(), $this->relations());
     }
 
     /**
@@ -119,12 +141,48 @@ trait Filterable
      *
      * @return array
      */
-    public function getUserDefinedFilterFields(): array
+    private function getUserDefinedFilterFields(): array
     {
         if (isset($this->userDefinedFilterFields)) {
             return $this->userDefinedFilterFields;
         }
 
+        if (isset($this->renamedFilterFields, $this->filterFields)) {
+            $fields = $this->getFilterFields();
+            $filterFields = [];
+
+            foreach ($fields as $filterName) {
+                if ($columnName = array_search($filterName, $this->renamedFilterFields)) {
+                    $filterFields[$columnName] = $filterName;
+                } else {
+                    $filterFields[] = $filterName;
+                }
+            }
+
+            return $this->userDefinedFilterFields = $filterFields;
+        }
+
+        if (isset($this->renamedFilterFields)) {
+            $fields = $this->getDefaultFields();
+
+            $filterFields = [];
+
+            foreach ($fields as $filterName) {
+                if (array_key_exists($filterName, $this->renamedFilterFields)) {
+                    $filterFields[$filterName] = $this->renamedFilterFields[$filterName];
+                } else {
+                    $filterFields[] = $filterName;
+                }
+            }
+
+            return $this->userDefinedFilterFields = $filterFields;
+        }
+
+        return $this->userDefinedFilterFields = $this->getFilterFields();
+    }
+
+    private function getFilterFields(): array
+    {
         $userDefinedFilterFields = [];
 
         foreach ($this->filterFields as $key => $value) {
@@ -139,7 +197,7 @@ trait Filterable
             }
         }
 
-        return $this->userDefinedFilterFields = $userDefinedFilterFields;
+        return $userDefinedFilterFields;
     }
 
     /**
@@ -156,8 +214,7 @@ trait Filterable
         foreach ($this->restrictedFilters ?? $this->filterFields ?? [] as $key => $value) {
             if (is_int($key) && Str::contains($value, ':')) {
                 $tKey = str($value)->before(':')->squish()->toString();
-                $tValue = str($value)->after(':')->squish()->explode(',')->all();
-                $restrictedFilters[$tKey] = $tValue;
+                $restrictedFilters[$tKey] = str($value)->after(':')->squish()->explode(',')->all();
             }
             if (is_string($key)) {
                 $restrictedFilters[$key] = Arr::wrap($value);
